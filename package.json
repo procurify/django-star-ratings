@@ -14,7 +14,6 @@
     "license": "BSD",
     "devDependencies": {
         "browserify": "^10.2.4",
-        "yuglify": "^0.1.4",
-        "compass": "^0.1.1"
+        "yuglify": "^0.1.4"
     }
 }
