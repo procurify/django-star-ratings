@@ -1,4 +1,7 @@
 from __future__ import unicode_literals
+
+import copy
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
@@ -7,6 +10,7 @@ from django.views.generic import View
 
 from . import app_settings
 from .models import Rating
+from .compat import is_authenticated
 import json
 
 
@@ -22,16 +26,22 @@ class Rate(View):
 
     def post(self, request, *args, **kwargs):
         def _post(request, *args, **kwargs):
-            return_url = request.GET.get('next', '/')
+            data = request.POST or json.loads(request.body.decode())
+            
+            data = copy.deepcopy(data)
+            return_url = data.pop('next', '/')
+            if type(return_url) == list:
+                return_url = return_url[0]
+
             if 'HTTP_X_REAL_IP' in self.request.META:
                 ip = self.request.META['HTTP_X_REAL_IP']
             else:
                 ip = self.request.META['REMOTE_ADDR']
-            data = json.loads(request.body.decode())
+                
             score = data.get('score')
-            user = request.user.is_authenticated() and request.user or None
+            data['user'] = is_authenticated(request.user) and request.user.pk or None
             try:
-                rating = self.model.objects.rate(self.get_object(), score, user=user, ip=ip)
+                rating = self.model.objects.rate(self.get_object(), score, user=data['user'], ip=ip)
                 if request.is_ajax():
                     result = rating.to_dict()
                     result['user_rating'] = int(score)
