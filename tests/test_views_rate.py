@@ -1,23 +1,11 @@
 from __future__ import unicode_literals
 
 import json
-import os
-import uuid
-
-import pytest
 from random import randint
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-
-from .base import BaseFooTest
-
-try:
-    from django.core.urlresolvers import reverse
-except ImportError:
-    from django.urls import reverse
-
-from django.test import override_settings, Client, TestCase
+from django.test import override_settings, Client
 from model_mommy import mommy
 from star_ratings import get_star_ratings_rating_model
 from star_ratings.models import UserRating

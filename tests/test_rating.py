@@ -1,21 +1,14 @@
 from __future__ import unicode_literals
 
-import os
-import uuid
-
-import pytest
-from django.conf import settings
 from hypothesis import given
 from hypothesis.strategies import text
 from hypothesis.extra.django import TestCase
 from random import random, randint
 from model_mommy import mommy
-from star_ratings import app_settings, get_star_ratings_rating_model, get_star_ratings_rating_model_name
-from star_ratings.models import Rating
+from star_ratings import app_settings, get_star_ratings_rating_model
 
 from .base import BaseFooTest
 from .fakes import fake_user, fake_rating
-from .models import MyRating
 
 
 class RatingToDict(TestCase):

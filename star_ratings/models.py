@@ -13,7 +13,6 @@ from django.utils.translation import gettext as _
 from model_utils.models import TimeStampedModel
 
 from . import app_settings, get_star_ratings_rating_model_name, get_star_ratings_rating_model
-from . import app_settings
 
 
 def _clean_user(user):
