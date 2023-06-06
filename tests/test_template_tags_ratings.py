@@ -1,282 +1,359 @@
 from __future__ import unicode_literals
 
+from mock import patch
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 from django.test import override_settings
-from hypothesis import given, Settings
+from hypothesis import given, settings
 from hypothesis.extra.django import TestCase
 from hypothesis.strategies import lists, integers
 from model_mommy import mommy
 from six import assertRaisesRegex
-from tests.strategies import scores
-from star_ratings import app_settings
-from star_ratings.models import Rating, UserRating
+
+from .base import BaseFooTest
+from .fakes import fake_user
+from .strategies import scores
+from star_ratings import app_settings, get_star_ratings_rating_model
+from star_ratings.models import UserRating
 from star_ratings.templatetags.ratings import ratings
-from tests.models import Foo
 
 
-class TemplateTagdRatings(TestCase):
-    def test_item_is_not_yet_rated___rating_object_for_item_is_returned(self):
-        item = mommy.make(Foo)
+class TemplateTagsRatings(BaseFooTest, TestCase):
+    @patch('django.template.Template.render')
+    def test_item_is_not_yet_rated___rating_object_for_item_is_returned(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertIsInstance(res['rating'], Rating)
-        self.assertEqual(item, res['rating'].content_object)
+        context = render_mock.call_args_list[0][0][0]
+        print(context)
+        self.assertIsInstance(context['rating'], get_star_ratings_rating_model())
+        self.assertEqual(item, context['rating'].content_object)
 
-    def test_item_is_rated___rating_object_for_item_is_returned(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_item_is_rated___rating_object_for_item_is_returned(self, render_mock):
+        item = mommy.make(self.foo_model)
 
-        rating = Rating.objects.for_instance(item)
+        rating = get_star_ratings_rating_model().objects.for_instance(item)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(rating, res['rating'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(rating, context['rating'])
 
-    def test_request_is_added_to_the_result(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_request_is_added_to_the_result(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(request, res['request'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(request, context['request'])
 
-    def test_request_user_is_added_to_the_result(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_request_user_is_added_to_the_result(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(request.user, res['user'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(request.user, context['user'])
 
-    def test_user_is_authenticated_without_rating_for_object___user_rating_is_none(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_user_is_authenticated_without_rating_for_object___user_rating_is_none(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
 
         request.user = get_user_model().objects.create_user(username='user', password='pass')
         self.client.login(username='user', password='pass')
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertIsNone(res['user_rating'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertIsNone(context['user_rating'])
 
-    def test_user_is_not_authenticated_with_rating_for_object___user_rating_is_none(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_user_is_not_authenticated_with_rating_for_object___user_rating_is_none(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
         request.user = AnonymousUser()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertIsNone(res['user_rating'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertIsNone(context['user_rating'])
 
-    def test_user_is_authenticated_with_rating_for_object___user_rating_for_user_is_returned(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_user_is_authenticated_with_rating_for_object___user_rating_for_user_is_returned(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
         request.user = get_user_model().objects.create_user(username='user', password='pass')
         self.client.login(username='user', password='pass')
 
-        rating = Rating.objects.rate(item, 3, request.user)
+        rating = get_star_ratings_rating_model().objects.rate(item, 3, request.user)
         user_rating = UserRating.objects.get(rating=rating, user=request.user)
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(user_rating, res['user_rating'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(user_rating, context['user_rating'])
 
-    def test_stars_list_is_added_to_the_result(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_user_is_authenticated_without_rating_for_object___user_rating_percentage_is_none(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
 
-        res = ratings({
+        request.user = get_user_model().objects.create_user(username='user', password='pass')
+        self.client.login(username='user', password='pass')
+
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(list(range(1, app_settings.STAR_RATINGS_RANGE + 1)), res['stars'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertIsNone(context['user_rating_percentage'])
 
-    def test_star_count_is_added_to_the_result(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_user_is_not_authenticated_with_rating_for_object___user_rating_percentage_is_none(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = AnonymousUser()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(app_settings.STAR_RATINGS_RANGE, res['star_count'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertIsNone(context['user_rating_percentage'])
 
-    @given(scores=lists(scores()), settings=Settings(max_examples=5))
+    @patch('django.template.Template.render')
+    def test_user_is_authenticated_with_rating_for_object___user_rating_percentage_for_user_is_returned(self, render_mock):
+        item = mommy.make(self.foo_model)
+
+        request = RequestFactory().get('/')
+        request.user = get_user_model().objects.create_user(username='user', password='pass')
+        self.client.login(username='user', password='pass')
+
+        rating = get_star_ratings_rating_model().objects.rate(item, 3, request.user)
+        user_rating = UserRating.objects.get(rating=rating, user=request.user)
+
+        ratings({
+            'request': request,
+        }, item)
+
+        context = render_mock.call_args_list[0][0][0]
+        expected_avg = 100 * (user_rating.score / Decimal(app_settings.STAR_RATINGS_RANGE))
+        self.assertEqual(expected_avg, context['user_rating_percentage'])
+
+    @patch('django.template.Template.render')
+    def test_stars_list_is_added_to_the_result(self, render_mock):
+        item = mommy.make(self.foo_model)
+
+        request = RequestFactory().get('/')
+        request.user = fake_user()
+
+        ratings({
+            'request': request,
+        }, item)
+
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(list(range(1, app_settings.STAR_RATINGS_RANGE + 1)), context['stars'])
+
+    @patch('django.template.Template.render')
+    def test_star_count_is_added_to_the_result(self, render_mock):
+        item = mommy.make(self.foo_model)
+
+        request = RequestFactory().get('/')
+        request.user = fake_user()
+
+        ratings({
+            'request': request,
+        }, item)
+
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(app_settings.STAR_RATINGS_RANGE, context['star_count'])
+
+    @given(scores=lists(scores()))
+    @settings(max_examples=5)
     def test_several_ratings_are_made___percentage_is_correct_in_result(self, scores):
-        item = mommy.make(Foo)
+        with patch('django.template.Template.render') as render_mock:
+            item = mommy.make(self.foo_model)
+
+            request = RequestFactory().get('/')
+            request.user = fake_user()
+
+            for score in scores:
+                get_star_ratings_rating_model().objects.rate(item, score, mommy.make(get_user_model()))
+
+            rating = get_star_ratings_rating_model().objects.for_instance(item)
+
+            ratings({
+                'request': request,
+            }, item)
+
+            context = render_mock.call_args_list[0][0][0]
+            expected_avg = 100 * (rating.average / Decimal(app_settings.STAR_RATINGS_RANGE))
+            self.assertEqual(expected_avg, context['percentage'])
+
+    @patch('django.template.Template.render')
+    def test_icon_height_is_not_set___icon_height_is_32(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        for score in scores:
-            Rating.objects.rate(item, score, mommy.make(get_user_model()))
-
-        rating = Rating.objects.for_instance(item)
-
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        expected_avg = 100 * (rating.average / Decimal(app_settings.STAR_RATINGS_RANGE))
-        self.assertEqual(expected_avg, res['percentage'])
-
-    def test_icon_height_is_not_set___icon_height_is_32(self):
-        item = mommy.make(Foo)
-
-        request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
-
-        res = ratings({
-            'request': request,
-        }, item)
-
-        self.assertEqual(32, res['icon_height'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(32, context['icon_height'])
 
     @given(integers())
     def test_icon_height_is_set___icon_height_is_correct(self, height):
-        item = mommy.make(Foo)
+        with patch('django.template.Template.render') as render_mock:
+            item = mommy.make(self.foo_model)
+
+            request = RequestFactory().get('/')
+            request.user = fake_user()
+
+            ratings({
+                'request': request,
+            }, item, icon_height=height)
+
+            context = render_mock.call_args_list[0][0][0]
+            self.assertEqual(height, context['icon_height'])
+
+    @patch('django.template.Template.render')
+    def test_icon_width_is_not_set___icon_height_is_32(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
-            'request': request,
-        }, item, icon_height=height)
-
-        self.assertEqual(height, res['icon_height'])
-
-    def test_icon_width_is_not_set___icon_height_is_32(self):
-        item = mommy.make(Foo)
-
-        request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
-
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertEqual(32, res['icon_width'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertEqual(32, context['icon_width'])
 
     @given(integers())
     def test_icon_width_is_set___icon_height_is_correct(self, width):
-        item = mommy.make(Foo)
+        with patch('django.template.Template.render') as render_mock:
+            item = mommy.make(self.foo_model)
+
+            request = RequestFactory().get('/')
+            request.user = fake_user()
+
+            ratings({
+                'request': request,
+            }, item, icon_width=width)
+
+            context = render_mock.call_args_list[0][0][0]
+            self.assertEqual(width, context['icon_width'])
+
+    @patch('django.template.Template.render')
+    def test_id_is_a_uid_with_dsr_prefix(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
-            'request': request,
-        }, item, icon_width=width)
-
-        self.assertEqual(width, res['icon_width'])
-
-    def test_id_is_a_uid_with_dsr_prefix(self):
-        item = mommy.make(Foo)
-
-        request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
-
-        res = ratings({
+        ratings({
             'request': request,
         }, item)
 
-        self.assertTrue(res['id'].startswith('dsr'))
-        self.assertIsNotNone(int(res['id'][3:], 16))
+        context = render_mock.call_args_list[0][0][0]
+        self.assertTrue(context['id'].startswith('dsr'))
+        self.assertIsNotNone(int(context['id'][3:], 16))
 
     def test_request_is_not_set_in_context___exception_is_raised(self):
-        item = mommy.make(Foo)
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        with assertRaisesRegex(self, Exception, 'Make sure you have "django.core.context_processors.request" in "TEMPLATE_CONTEXT_PROCESSORS"'):
+        with assertRaisesRegex(self, Exception, 'Make sure you have "django.core.context_processors.request" in your templates context processor list'):
             ratings({}, item)
 
     @override_settings(STAR_RATINGS_ANONYMOUS=False)
-    def test_read_only_is_false_user_is_not_authenticated_anon_rating_is_false___editable_is_false(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_read_only_is_false_user_is_not_authenticated_anon_rating_is_false___editable_is_false(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
         request.user = AnonymousUser()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item, read_only=False)
 
-        self.assertFalse(res['editable'])
-        self.assertFalse(res['read_only'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertFalse(context['editable'])
+        self.assertFalse(context['read_only'])
 
     @override_settings(STAR_RATINGS_ANONYMOUS=False)
-    def test_read_only_is_false_user_is_authenticated_anon_rating_is_false___editable_is_true(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_read_only_is_false_user_is_authenticated_anon_rating_is_false___editable_is_true(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
+        request.user = fake_user()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item, read_only=False)
 
-        self.assertTrue(res['editable'])
-        self.assertFalse(res['read_only'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertTrue(context['editable'])
+        self.assertFalse(context['read_only'])
 
     @override_settings(STAR_RATINGS_ANONYMOUS=True)
-    def test_read_only_is_false_user_is_not_authenticated_anon_rating_is_true___editable_is_true(self):
-        item = mommy.make(Foo)
+    @patch('django.template.Template.render')
+    def test_read_only_is_false_user_is_not_authenticated_anon_rating_is_true___editable_is_true(self, render_mock):
+        item = mommy.make(self.foo_model)
 
         request = RequestFactory().get('/')
         request.user = AnonymousUser()
 
-        res = ratings({
+        ratings({
             'request': request,
         }, item, read_only=False)
 
-        self.assertTrue(res['editable'])
-        self.assertFalse(res['read_only'])
-
-    def test_read_only_is_set_to_true___editable_is_false(self):
-        item = mommy.make(Foo)
-
-        request = RequestFactory().get('/')
-        request.user = mommy.make(get_user_model())
-
-        res = ratings({
-            'request': request,
-        }, item, read_only=True)
-
-        self.assertFalse(res['editable'])
-        self.assertTrue(res['read_only'])
+        context = render_mock.call_args_list[0][0][0]
+        self.assertTrue(context['editable'])
+        self.assertFalse(context['read_only'])

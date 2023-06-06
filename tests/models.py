@@ -1,25 +1,34 @@
 from __future__ import unicode_literals
 
+import uuid
+
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 
-from star_ratings.models import Rating
+from star_ratings import get_star_ratings_rating_model_name
+from star_ratings.models import AbstractBaseRating
 
 
-@python_2_unicode_compatible
 class Foo(models.Model):
     name = models.CharField(max_length=100)
-    ratings = GenericRelation(Rating, related_query_name='foos')
+    ratings = GenericRelation(get_star_ratings_rating_model_name(), related_query_name='foos')
 
     def __str__(self):
         return self.name
 
 
-@python_2_unicode_compatible
-class Bar(models.Model):
-    name = models.CharField(max_length=100)
-    ratings = GenericRelation(Rating, related_query_name='bars')
+class Bar(Foo):
+    pass
 
-    def __str__(self):
-        return self.name
+
+class FooWithUUID(Foo):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+
+class BarWithUUID(FooWithUUID):
+    pass
+
+
+class MyRating(AbstractBaseRating):
+    object_id = models.UUIDField(null=True, blank=True)
+    foo = models.TextField()
