@@ -103,10 +103,6 @@ class AbstractBaseRating(models.Model):
         self.average = aggregates.get('average') or 0.0
         self.save()
         
-class Rating(AbstractBaseRating):
-    class Meta(AbstractBaseRating.Meta):
-        swappable = swapper.swappable_setting('star_ratings', 'Rating')
-
 
 class Rating(AbstractBaseRating):
     class Meta(AbstractBaseRating.Meta):
