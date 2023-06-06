@@ -13,7 +13,7 @@
     "author": "Jonas Hagstedt <hagstedt@gmail.com> (https://github.com/jonashagstedt)",
     "license": "BSD",
     "devDependencies": {
-        "browserify": "^10.2.4",
+        "browserify": "^17.0.0",
         "yuglify": "^0.1.4"
     }
 }
