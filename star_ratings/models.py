@@ -9,7 +9,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Avg, Count, Sum
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from model_utils.models import TimeStampedModel
 
 from . import app_settings, get_star_ratings_rating_model_name, get_star_ratings_rating_model
@@ -36,7 +36,7 @@ class RatingManager(models.Manager):
         return self.for_instance(instance)
 
     def rate(self, instance, score, user=None, ip=None, review=None):
-        if isinstance(instance, self.model):
+        if isinstance(instance, Rating):
             raise TypeError("Rating manager 'rate' expects model to be rated, not Rating model.")
         ct = ContentType.objects.get_for_model(instance)
 
@@ -101,13 +101,12 @@ class AbstractBaseRating(models.Model):
         self.total = aggregates.get('total') or 0
         self.average = aggregates.get('average') or 0.0
         self.save()
-
+        
 
 class Rating(AbstractBaseRating):
     class Meta(AbstractBaseRating.Meta):
         swappable = swapper.swappable_setting('star_ratings', 'Rating')
-
-
+        
 class UserRatingManager(models.Manager):
     def for_instance_by_user(self, instance, user=None):
         ct = ContentType.objects.get_for_model(instance)

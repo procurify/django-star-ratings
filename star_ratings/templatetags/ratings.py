@@ -27,6 +27,11 @@ def ratings(context, item, icon_height=app_settings.STAR_RATINGS_STAR_HEIGHT, ic
         user_rating = UserRating.objects.for_instance_by_user(item, user=user)
     else:
         user_rating = None
+        
+    if user_rating is not None:
+        user_rating_percentage = 100 * (user_rating.score / Decimal(app_settings.STAR_RATINGS_RANGE))
+    else:
+        user_rating_percentage = None
 
     if user_rating is not None:
         user_rating_percentage = 100 * (user_rating.score / Decimal(app_settings.STAR_RATINGS_RANGE))
