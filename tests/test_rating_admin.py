@@ -7,6 +7,7 @@ from star_ratings.admin import RatingAdmin
 from star_ratings import get_star_ratings_rating_model
 from .fakes import fake_rating
 
+
 class AdminRatingAdmin(TestCase):
     def test_stars_return_the_correct_html(self):
         average = 5 * random()

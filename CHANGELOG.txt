@@ -1,4 +1,52 @@
+0.9.1 (2019-12-13)
+------------------
+
+* Fixed issue displaying stars in admin (thanks @GDay)
+* Fixed issue with auto deploy configs
+
+0.9.0 (2019-12-12)
+------------------
+
+* Added support for python 3.8
+* Added support for django 3
+* Added RU translations (thanks @DarkDemiurg)
+
+0.8.0 (2019-06-26)
+------------------
+
+* Added support for django 2.2
+* Fixed issue not setting csrf token in ratings template (thanks @4lm)
+* Added german language support (thanks @4lm)
+* Added support for python 3.7
+
+0.7.0 (2018-09-13)
+------------------
+
+* Added support for django 2.1
+* Changed sprite image in template tag to use static files wrapper
+  (this may cause issues if your STAR_RATINGS_STAR_SPRITE setting includes static root url)
+* Replaced links with forms so that requests are made correctly if there is no js (This may break other css/js)
+* Updated error message for missing requests context processor to work for new and old template settings
+
+0.6.1 (2018-02-08)
+------------------
+
+* Added js events for after a user rates an object
+* Added `user_rating_percentage` to rating template tag context.
+* Added `STAR_RATINGS_OBJECT_ID_PATTERN` for custom rating model handling in urls (thanks @RabidCicada)
+* Added documentation about initial migration when using custom ratings model (thanks @RabidCicada)
+
+
+0.6.0 (2017-12-11)
+------------------
+
+* Added support for django 2.0
+* Added swappable rating model
+
+
 0.5.6 (2017-07-12)
+------------------
+
 * Star sprite sheet can be specified in settings using `STAR_RATINGS_STAR_SPRITE`
 
 

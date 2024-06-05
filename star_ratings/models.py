@@ -25,7 +25,7 @@ def _clean_user(user):
 
 class RatingManager(models.Manager):
     def for_instance(self, instance):
-        if isinstance(instance, Rating):
+        if isinstance(instance, self.model):
             raise TypeError("Rating manager 'for_instance' expects model to be rated, not Rating model.")
         ct = ContentType.objects.get_for_model(instance)
         ratings, created = self.get_or_create(content_type=ct, object_id=instance.pk)
@@ -36,7 +36,7 @@ class RatingManager(models.Manager):
         return self.for_instance(instance)
 
     def rate(self, instance, score, user=None, ip=None, review=None):
-        if isinstance(instance, Rating):
+        if isinstance(instance, self.model):
             raise TypeError("Rating manager 'rate' expects model to be rated, not Rating model.")
         ct = ContentType.objects.get_for_model(instance)
 
@@ -101,12 +101,13 @@ class AbstractBaseRating(models.Model):
         self.total = aggregates.get('total') or 0
         self.average = aggregates.get('average') or 0.0
         self.save()
-        
+
 
 class Rating(AbstractBaseRating):
     class Meta(AbstractBaseRating.Meta):
         swappable = swapper.swappable_setting('star_ratings', 'Rating')
-        
+
+
 class UserRatingManager(models.Manager):
     def for_instance_by_user(self, instance, user=None):
         ct = ContentType.objects.get_for_model(instance)
