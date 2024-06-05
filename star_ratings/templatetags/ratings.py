@@ -33,6 +33,11 @@ def ratings(context, item, icon_height=app_settings.STAR_RATINGS_STAR_HEIGHT, ic
     else:
         user_rating_percentage = None
 
+    if user_rating is not None:
+        user_rating_percentage = 100 * (user_rating.score / Decimal(app_settings.STAR_RATINGS_RANGE))
+    else:
+        user_rating_percentage = None
+
     stars = [i for i in range(1, app_settings.STAR_RATINGS_RANGE + 1)]
 
     # We get the template to load here rather than using inclusion_tag so that the
